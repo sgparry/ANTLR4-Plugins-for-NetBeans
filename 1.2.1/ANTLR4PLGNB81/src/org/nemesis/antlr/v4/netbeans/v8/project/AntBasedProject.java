@@ -52,13 +52,18 @@ import java.util.ListIterator;
 
 import org.nemesis.antlr.v4.netbeans.v8.project.action.J2SEProjectToBeAdapted;
 import org.nemesis.antlr.v4.netbeans.v8.project.action.TaskException;
+import org.netbeans.api.java.classpath.ClassPath;
+import org.netbeans.api.java.project.JavaProjectConstants;
+import org.netbeans.api.java.project.classpath.ProjectClassPathModifier;
 
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
-import org.netbeans.api.project.ant.AntBuildExtender;
+import org.netbeans.api.project.ProjectUtils;
+import org.netbeans.api.project.SourceGroup;
+import org.netbeans.api.project.Sources;
+import org.netbeans.api.project.libraries.Library;
 import org.netbeans.api.project.libraries.LibraryManager;
 
-import org.netbeans.modules.java.j2seproject.J2SEProject;
 
 import org.openide.filesystems.FileObject;
 
@@ -67,6 +72,9 @@ import org.openide.filesystems.FileObject;
  * @author Frédéric Yvon Vinet
  */
 public class AntBasedProject extends J2SEProjectToBeAdapted {
+    private static final String LIB_VERSION = "4.6";
+    private static final String RUNTIME_LIB_NAME = "ANTLR_" + LIB_VERSION + "_runtime";
+    private static final String COMPLETE_LIB_NAME = "ANTLR_" + LIB_VERSION + "_complete";
     private static final String GRAMMAR_DIRECTORY_NAME = "grammar";
     private static final String IMPORT_DIRECTORY_NAME = "imports";
     private static final String GRAMMAR_NODE_NAME = "Source ANTLR grammars";
@@ -462,7 +470,7 @@ public class AntBasedProject extends J2SEProjectToBeAdapted {
         "# Normally, you should not change this value that points to your project antlr4",
         "# ant task library",
         "antlr.ant.task.jar=nbproject/antext/ANTLRAntTask-1.2.jar",
-        "antlr.ant.task.antlr.runtime.jar=${libs.ANTLR_4.6_runtime.classpath}",
+        "antlr.ant.task.antlr.runtime.jar=${libs." + RUNTIME_LIB_NAME + ".classpath}",
         "",
         "# You can set an absolute directory path or a project relative path",
         "antlr.generator.src.dir=grammar",
@@ -485,19 +493,19 @@ public class AntBasedProject extends J2SEProjectToBeAdapted {
         "# This property defines the ANTLR library that will be used for generating",
         "# Java code from your grammars.",
         "# You can set this property with :",
-        "# - NetBeans library repository: ${libs.ANTLR_4.6_complete.classpath} or any",
+        "# - NetBeans library repository: ${libs." + COMPLETE_LIB_NAME + ".classpath} or any",
         "#   other version you have installed in your NETBeans library repository,",
         "# - An ANTLR complete library of your choice defined by an absolute path  ",
         "#   pointing typically outside project directory,",
-        "# - the antlr 4.6 complete library deployed in your project library repository: ",
-        "#   lib/antlr-4.6-complete.jar (recommended because it enables your project to",
+        "# - the antlr " + LIB_VERSION + " complete library deployed in your project library repository: ",
+        "#   lib/antlr-" + LIB_VERSION + "-complete.jar (recommended because it enables your project to",
         "#   continue to work even if you uninstall NetBeans),",
         "# - empty property that will lead to use the library called project library.",
         "# Whatever choice, you have made, if no library is found, the antlr4 task will fail.",
-        "antlr.generator.jar=${libs.ANTLR_4.6_complete.classpath}",
+        "antlr.generator.jar=${libs." + COMPLETE_LIB_NAME + ".classpath}",
         "",
         "# required for running your generated parser",
-        "antlr.runtime.jar=${libs.ANTLR_4.6_runtime.classpath}",
+        "antlr.runtime.jar=${libs." + RUNTIME_LIB_NAME + ".classpath}",
         "",
         "# defines if ANTLR will generate a listener or not (default value=true)",
         "antlr.generator.option.code.listener=false",
@@ -551,49 +559,22 @@ public class AntBasedProject extends J2SEProjectToBeAdapted {
         try (
             OutputStream fout = Files.newOutputStream
                 (projectPropertiesFilePath           ,
-                 StandardOpenOption.TRUNCATE_EXISTING,
+                 StandardOpenOption.APPEND,
                  StandardOpenOption.WRITE            );
         ) {
-            Iterator<String> it = lines.iterator();
-            String line;
-            boolean javacOnSeveralLines = false;
-            while (it.hasNext()) {
-                line = it.next();
-                if (!javacOnSeveralLines) {
-                    if (!line.startsWith("javac.classpath")) {
-                        fout.write(line.getBytes());
-                        fout.write(LINE_TERMINATOR.getBytes());
-                    } else {
-                        fout.write(line.getBytes());
-                        if (line.endsWith("\\"))
-                            javacOnSeveralLines = true;
-                        else {
-                            if (line.equals("javac.classpath="))
-                                fout.write("\\".getBytes());
-                            else
-                                fout.write(":\\".getBytes());
-                            fout.write(LINE_TERMINATOR.getBytes());
-                            fout.write("    ${libs.ANTLR_4.6_runtime.classpath}".getBytes());
-                        }
-                        fout.write(LINE_TERMINATOR.getBytes());
-                    }
-                } else {
-                    fout.write(line.getBytes());
-                    if (!line.endsWith("\\")) {
-                        javacOnSeveralLines = false;
-                        fout.write(":\\".getBytes());
-                        fout.write(LINE_TERMINATOR.getBytes());
-                        fout.write("    ${libs.ANTLR_4.6_runtime.classpath}".getBytes());
-                    }
-                    fout.write(LINE_TERMINATOR.getBytes());
-                }
-            }
             
          // We add the specific ANTLR properties at the end of project property file
             for (String propertyLine : ANTLR4_PROPERTIES) {
                 fout.write(propertyLine.getBytes());
                 fout.write(LINE_TERMINATOR.getBytes());
             }
+            
+            Sources sources = ProjectUtils.getSources(project);
+            SourceGroup[] sourceGroups = sources.getSourceGroups(JavaProjectConstants.SOURCES_TYPE_JAVA);
+            SourceGroup sourceGroup = sourceGroups[0];
+            FileObject sgRoot = sourceGroup.getRootFolder();
+            Library lib = libraryManager.getLibrary(RUNTIME_LIB_NAME);
+            ProjectClassPathModifier.addLibraries(new Library[]{lib}, sgRoot, ClassPath.COMPILE); // Fails regardless
 
             out.println("* ... ANTLR properties added to project.properties file *");
         } catch (IOException ex) {
