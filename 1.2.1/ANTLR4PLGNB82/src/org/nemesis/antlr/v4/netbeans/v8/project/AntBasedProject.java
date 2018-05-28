@@ -63,14 +63,11 @@ import org.netbeans.api.project.SourceGroup;
 import org.netbeans.api.project.Sources;
 import org.netbeans.api.project.libraries.Library;
 import org.netbeans.api.project.libraries.LibraryManager;
-import org.netbeans.spi.project.support.ant.AntProjectEvent;
 import org.netbeans.spi.project.support.ant.AntProjectHelper;
-import org.netbeans.spi.project.support.ant.EditableProperties;
 import org.netbeans.modules.java.j2seproject.J2SEProject;
 
 
 import org.openide.filesystems.FileObject;
-import org.openide.util.Lookup;
 
 /**
  *
