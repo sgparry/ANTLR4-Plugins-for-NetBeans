@@ -45,6 +45,7 @@ public abstract class J2SEProjectToBeAdapted {
                                                         ("ANTLR plugin", false);
     protected static final OutputWriter out = IO.getOut();
     protected static final OutputWriter err = IO.getErr();
+    protected static final String ANTLR_LIB_VERSION = "4.6";
     
     protected final Project project;
     protected final Lookup  projectLookup;

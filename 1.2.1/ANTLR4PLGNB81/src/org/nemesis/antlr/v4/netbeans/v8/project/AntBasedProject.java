@@ -74,9 +74,8 @@ import org.openide.filesystems.FileObject;
  * @author Frédéric Yvon Vinet
  */
 public class AntBasedProject extends J2SEProjectToBeAdapted {
-    private static final String LIB_VERSION = "4.6";
-    private static final String RUNTIME_LIB_NAME = "ANTLR_" + LIB_VERSION + "_runtime";
-    private static final String COMPLETE_LIB_NAME = "ANTLR_" + LIB_VERSION + "_complete";
+    private static final String RUNTIME_LIB_NAME = "ANTLR_" + ANTLR_LIB_VERSION + "_runtime";
+    private static final String COMPLETE_LIB_NAME = "ANTLR_" + ANTLR_LIB_VERSION + "_complete";
     private static final String GRAMMAR_DIRECTORY_NAME = "grammar";
     private static final String IMPORT_DIRECTORY_NAME = "imports";
     private static final String GRAMMAR_NODE_NAME = "Source ANTLR grammars";
@@ -514,8 +513,8 @@ public class AntBasedProject extends J2SEProjectToBeAdapted {
             "#   other version you have installed in your NETBeans library repository,",
             "# - An ANTLR complete library of your choice defined by an absolute path  ",
             "#   pointing typically outside project directory,",
-            "# - the antlr " + LIB_VERSION + " complete library deployed in your project library repository: ",
-            "#   lib/antlr-" + LIB_VERSION + "-complete.jar (recommended because it enables your project to",
+            "# - the antlr " + ANTLR_LIB_VERSION + " complete library deployed in your project library repository: ",
+            "#   lib/antlr-" + ANTLR_LIB_VERSION + "-complete.jar (recommended because it enables your project to",
             "#   continue to work even if you uninstall NetBeans),",
             "# - empty property that will lead to use the library called project library.",
             "# Whatever choice, you have made, if no library is found, the antlr4 task will fail."},
