@@ -105,7 +105,7 @@ public class AntBasedProject extends J2SEProjectToBeAdapted {
      // We deploy the antlr4 ant task library
         File antlr4LibraryFile = createAntlr4AntExtensionLibrary(projectDirectory);
         
-     // Task 3: The runtime and complete ANTLR 4.6 libraries have been
+     // Task 3: The runtime and complete ANTLR 4.7.1 libraries have been
      // installed in NetBeans Library Repository by adding two Jave SE 
      // Library Descriptors to the project.
      // These installations are done only once at ANTLR plugin installation.

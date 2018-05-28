@@ -79,7 +79,7 @@ public class MavenBasedProject extends J2SEProjectToBeAdapted {
         Thread r = new Thread(new ANTLR4NodeRenamer(project));
         r.start();
         
-     // Task 3: we declare the ANTLR 4.6 Maven plugin into POM file
+     // Task 3: we declare the ANTLR 4.7.1 Maven plugin into POM file
         declareANTLRPluginInPOM(projectDirectory);
         
      // Task 4: we declare Codehaus mojo Maven plugin into POM file in order to
