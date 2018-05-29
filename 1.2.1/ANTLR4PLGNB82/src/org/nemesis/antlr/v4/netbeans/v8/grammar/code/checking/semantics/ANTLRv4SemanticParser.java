@@ -30,8 +30,6 @@ package org.nemesis.antlr.v4.netbeans.v8.grammar.code.checking.semantics;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,7 +50,8 @@ import java.util.logging.Logger;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CodePointCharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 
@@ -1370,19 +1369,15 @@ public class ANTLRv4SemanticParser extends ANTLRv4BaseListener {
         try {
             String contentToBeParsed = grammarDoc.getText
                                                     (0, grammarDoc.getLength());
-            try (
-                Reader sr = new StringReader(contentToBeParsed);
-            ) {
-                ANTLRInputStream input = new ANTLRInputStream(sr);
-                ANTLRv4Lexer lexer = new ANTLRv4Lexer(input);
-            
-                CommonTokenStream tokens = new CommonTokenStream(lexer);
-                ANTLRv4Parser parser = new ANTLRv4Parser(tokens);
-                parser.removeErrorListeners(); // remove ConsoleErrorListener
-                Collector collector = new Collector(grammarDoc, grammarFilePath);
-                parser.addParseListener(collector);
-                parser.grammarFile();
-            }
+            CodePointCharStream input = CharStreams.fromString(contentToBeParsed);
+            ANTLRv4Lexer lexer = new ANTLRv4Lexer(input);
+
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            ANTLRv4Parser parser = new ANTLRv4Parser(tokens);
+            parser.removeErrorListeners(); // remove ConsoleErrorListener
+            Collector collector = new Collector(grammarDoc, grammarFilePath);
+            parser.addParseListener(collector);
+            parser.grammarFile();
         } catch (IOException | 
                  RecognitionException |
                  BadLocationException ex) {
