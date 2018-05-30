@@ -51,10 +51,13 @@ import org.apache.tools.ant.Task;
 
 
 public class Antlr4 extends Task {
+
+    private static final String VERSION = "1.2";
     
     private String  srcdir;
     private String  destdir;
     private String  excludes;
+    private String  importdir;
     private String  library;
     private boolean listener;
     private boolean visitor;
@@ -64,19 +67,26 @@ public class Antlr4 extends Task {
     public void setSrcdir(String srcdir) {
         this.srcdir = srcdir;
     }
-   
+
     public void setDestdir(String destdir) {
         this.destdir = destdir;
     }
-   
+
     public void setExcludes(String excludes) {
         this.excludes = excludes;
     }
-  
+
+    public void setImportdir(String importdir) {
+        String importdir2 = importdir.trim();
+        if (!importdir2.equals("")) {
+            this.importdir = importdir;
+        }
+    }
+
     public void setLibrary(String library) {
         this.library = library;
     }
-  
+
     public void setListener(boolean listener) {
         this.listener = listener;
     }
@@ -95,13 +105,14 @@ public class Antlr4 extends Task {
             this.codePackage = codePackage2;
         }
     }
-    
+
     private       String          codeGenerationANTLRVersion;
     private       String          antTaskANTLRVersion;
     private       String          projectDirectory;
     private       Path            projectDirectoryPath;
     private       String          absoluteSrcDir;
     private final ArrayList<Path> excludedFilePaths;
+    private       String          absoluteImportDir;
     private       String          absoluteDestDir;
     private       String          absoluteLibrary;
     
@@ -113,23 +124,24 @@ public class Antlr4 extends Task {
         this.srcdir = null;
         this.destdir = null;
         this.excludes = null;
-    
+
         this.library = DEFAULT_ANTLR_LIBRARY;
         this.listener = true;
         this.visitor = false;
         this.atn = false;
         this.codePackage = null;
-     
+
         this.grammarFiles = new ArrayList();
         this.antlrCodeGenerator = null;
-        
+
         this.projectDirectory = null;
         this.absoluteSrcDir = null;
         this.excludedFilePaths = new ArrayList<>();
+        this.absoluteImportDir = null;
         this.absoluteDestDir = null;
         this.absoluteLibrary = null;
     }
- 
+
 
     @Override
     public void execute() throws BuildException {
@@ -139,25 +151,25 @@ public class Antlr4 extends Task {
      // attribute after the instantiation of the Task
         projectDirectory = project.getProperty("basedir");
         projectDirectoryPath = Paths.get(projectDirectory);
-        
+
         checkMandatoryAttributePresence();
         checkDirParametersAndInitAbsolutesDirs();
 
         antTaskANTLRVersion = recoverClassPathANTLRVersion();
         codeGenerationANTLRVersion = ANTLRToolChecker.checkANTLRToolPresence(library);
-        
+
         log("antlr4 ant task:");
+        log("- antlr4 ant task version: 1.2");
         log("- ANTLR version used by antlr4 task: " + antTaskANTLRVersion);
         log("- Grammar files will be collected in next directory: " + srcdir);
-        log(((excludes == null) ?
-            "- With no excluded grammar file" :
-            "- Grammar files excluded from generation process: "  + excludes));
+        log("- Grammar files excluded from generation process: " + excludes);
+
         log("- Java files will be generated in next directory: " + destdir);
         log("- Used ANTLR library for code generation: " + library);
         log("- ANTLR version of this library: " + codeGenerationANTLRVersion);
 
         collectGrammarFiles(absoluteSrcDir);
-        
+
         log("");
         log("Collected grammar files:");
         for (GrammarFile grammarFile : grammarFiles) {
@@ -165,52 +177,63 @@ public class Antlr4 extends Task {
             log("- " + path);
 //            log("  " + grammarFile.getPath());
         }
-        
+
         try {
-            new ANTLRDependenceRecoverer(absoluteDestDir, listener, visitor, codePackage, atn);
+            new ANTLRDependenceRecoverer(absoluteSrcDir, absoluteImportDir, absoluteDestDir, listener, visitor, codePackage, atn);
         } catch (NoClassDefFoundError ex) {
             System.err.println("Error catched!");
             ex.getCause().printStackTrace();
         }
-        new FileConverter(absoluteSrcDir, absoluteDestDir);
-        antlrCodeGenerator = new ANTLRCodeGenerator(library, absoluteDestDir, listener, visitor, codePackage, atn);
+        new FileConverter(absoluteSrcDir, absoluteDestDir, absoluteImportDir);
+        antlrCodeGenerator = new ANTLRCodeGenerator(library, absoluteImportDir, absoluteDestDir, listener, visitor, codePackage, atn);
 
         Iterator<GrammarFile> it = this.grammarFiles.iterator();
-        while (it.hasNext()) {
-            GrammarFile grammarFile = (GrammarFile)it.next();
-            log("");
-            Path relativeGrammarPath = projectDirectoryPath.relativize(grammarFile.getPath());
-            log("Processing of " + relativeGrammarPath + ":");
-            ArrayList<ANTLRFile> filesThatIDependOn = grammarFile.getFilesThatIDependOn();
-            if (filesThatIDependOn.isEmpty()) {
-                log("- depends of no file");
-            } else {
-                log("- depends of next file:");
+        try {
+            while (it.hasNext()) {
+                GrammarFile grammarFile = (GrammarFile)it.next();
+                log("");
+                Path relativeGrammarPath = projectDirectoryPath.relativize(grammarFile.getPath());
+                log("Processing of " + relativeGrammarPath + ":");
+                ArrayList<ANTLRFile> filesThatIDependOn = grammarFile.getFilesThatIDependOn();
+                if (filesThatIDependOn.isEmpty()) {
+                    log("- depends of no file");
+                } else {
+                    log("- depends of next file:");
                 for (ANTLRFile fileThatIDependOn : filesThatIDependOn) {
-                    Path relativePath = projectDirectoryPath.relativize(fileThatIDependOn.getPath());
-                    log("  -> " + relativePath);
+                        Path relativePath = projectDirectoryPath.relativize(fileThatIDependOn.getPath());
+                        log("  -> " + relativePath);
+                    }
                 }
-            }
 
-         // A dependent file may be:
-         // - a generated file (generated from the current grammar),
-         // - another grammar file that imports the current grammar file
-            ArrayList<ANTLRFile> dependentFiles = grammarFile.getFilesThatDependOnMe();
-            if (dependentFiles.isEmpty()) {
-                log("- no dependent file");
-            } else {
-                log("- dependent files:");
+            // A dependent file may be:
+            // - a generated file (generated from the current grammar),
+            // - another grammar file that imports the current grammar file
+               ArrayList<ANTLRFile> dependentFiles = grammarFile.getFilesThatDependOnMe();
+               if (dependentFiles.isEmpty()) {
+                    log("- no dependent file");
+                } else {
+                    log("- dependent files:");
                 for (ANTLRFile dependentFile : dependentFiles) {
-                    Path relativePath = projectDirectoryPath.relativize(dependentFile.getPath());
-                    log("  -> " + relativePath);
+                        Path relativePath = projectDirectoryPath.relativize(dependentFile.getPath());
+                        log("  -> " + relativePath);
+                    }
+                }
+
+                if (isGenerationRequiredFor(grammarFile)) {
+                    log("Conclusion: code generation required for " + relativeGrammarPath);
+                    antlrCodeGenerator.generateCodeFor(grammarFile);
+                } else {
+                    if (dependentFiles.isEmpty()) {
+                        log("Conclusion: No code generation possible for " + relativeGrammarPath);
+
+                        throw new BuildException("grammar has no name!");
+                    }
+                    log("Conclusion: No code generation required for " + relativeGrammarPath);
                 }
             }
-
-            if (isGenerationRequiredFor(grammarFile)) {
-                log("Conclusion: code generation required for " + relativeGrammarPath);
-                antlrCodeGenerator.generateCodeFor(grammarFile);
-            } else
-                log("Conclusion: No code generation required for " + relativeGrammarPath);
+        } catch (TaskException ex) {
+            log(ex.getMessage());
+            throw new BuildException("");
         }
     }
 
@@ -221,7 +244,7 @@ public class Antlr4 extends Task {
         if (destdir == null)
             throw new BuildException("destdir is a mandatory attribute of task antlr4");
     }
-    
+
     
     private void checkDirParametersAndInitAbsolutesDirs() {
      // srcdir ant attribute management
@@ -242,7 +265,7 @@ public class Antlr4 extends Task {
         } catch (InvalidPathException ex) {
             throw new BuildException("Invalid path for srcdir attribute\n");
         }
-
+        
      // destdir ant attribute management
         try {
             Path destdirPath = Paths.get(destdir);
@@ -256,7 +279,7 @@ public class Antlr4 extends Task {
                 boolean creation = dir.mkdirs();
                 if (!creation)
                     throw new BuildException("Unable to create directory: " + absoluteDestDir);
-            }
+                }
             if (!dir.isDirectory())
                 throw new BuildException("destdir attribute points to a file");
             if (!dir.canRead())
@@ -264,7 +287,7 @@ public class Antlr4 extends Task {
         } catch (InvalidPathException ex) {
             throw new BuildException("Invalid path for destdir attribute\n");
         }
-        
+
      // excludes ant attribute management
         if (excludes != null) {
             String[] excludedGrammars;
@@ -285,7 +308,33 @@ public class Antlr4 extends Task {
                 excludedFilePaths.add(excludedPath);
             }
         }
-        
+
+        try {
+            if (importdir != null) {
+                Path importdirPath = Paths.get(importdir);
+                if (importdirPath.isAbsolute()) {
+                    absoluteImportDir = importdir;
+                } else {
+                    absoluteImportDir = Paths.get(projectDirectory, importdir).toString();
+                }
+                File dir = new File(absoluteImportDir);
+                if (!dir.exists()) {
+                    boolean creation = dir.mkdirs();
+                    if (!creation) {
+                        throw new BuildException("Unable to create directory: " + absoluteDestDir);
+                    }
+                }
+                if (!dir.isDirectory()) {
+                    throw new BuildException("importdir attribute points to a file");
+                }
+                if (!dir.canRead()) {
+                    throw new BuildException("importdir attribute points to a directory that current user does not have read access to");
+                }
+            }
+        } catch (InvalidPathException ex) {
+            throw new BuildException("Invalid path for importdir attribute\n");
+        }
+
      // library ant attribute management
         if (library != null) {
             Path libraryPath = Paths.get(library);
@@ -303,7 +352,7 @@ public class Antlr4 extends Task {
                 throw new BuildException("library attribute points to a file that current user does not have read access to");
         }
     }
-    
+
     
     private static final String MAVEN_POM_PROPERTY_FILE =
                                "META-INF/maven/org.antlr/antlr4-runtime/pom.properties";
@@ -315,9 +364,9 @@ public class Antlr4 extends Task {
                                                      (MAVEN_POM_PROPERTY_FILE);
         ) {
             if (is == null)
-                throw new BuildException("Unable to find Maven POM file in classpath");
-            Properties mavenProperties = new Properties();
-            mavenProperties.load(is);
+                    throw new BuildException("Unable to find Maven POM file in classpath");
+                Properties mavenProperties = new Properties();
+                mavenProperties.load(is);
             version = mavenProperties.getProperty(ANTLR_VERSION);
         } catch (IOException ex) {
             throw new BuildException
@@ -325,7 +374,7 @@ public class Antlr4 extends Task {
         }
         return version;
     }
-    
+
 
     private void collectGrammarFiles(String SourceDir) {
         Path srcDirPath = Paths.get(SourceDir);
@@ -334,19 +383,21 @@ public class Antlr4 extends Task {
         try (
             DirectoryStream<Path> filePathStream = Files.newDirectoryStream(srcDirPath);
         ) {
-            Iterator<Path> iterator = filePathStream.iterator();
-            while (iterator.hasNext()) {
-                Path path = iterator.next();
-                if (matcher.matches(path)) {
-                    if (!excludedFilePaths.contains(path)) {
-                        GrammarFile grammarFile = new GrammarFile(path);
-                        grammarFiles.add(grammarFile);
+                Iterator<Path> iterator = filePathStream.iterator();
+                while (iterator.hasNext()) {
+                    Path path = iterator.next();
+                    if (!path.startsWith(absoluteImportDir)) {
+                        if (matcher.matches(path)) {
+                            if (!excludedFilePaths.contains(path)) {
+                                GrammarFile grammarFile = new GrammarFile(path);
+                                grammarFiles.add(grammarFile);
+                            }
+                        } else if (path.toFile().isDirectory()) {
+                            String sourceSubDir = path.toString();
+                            collectGrammarFiles(sourceSubDir);
+                        }
                     }
-                } else if (path.toFile().isDirectory()) {
-                    String sourceSubDir = path.toString();
-                    collectGrammarFiles(sourceSubDir);
                 }
-            }
         } catch (IOException ex) {
             throw new BuildException("Unable to read in grammar source directory or its subdirectories");
         } catch (PatternSyntaxException ex) {
@@ -354,13 +405,13 @@ public class Antlr4 extends Task {
         }
     }
 
-
-    private boolean isGenerationRequiredFor(ANTLRFile antlrFile) {
+    
+    private boolean isGenerationRequiredFor(ANTLRFile antlrFile) throws TaskException {
         File grammarfile = antlrFile.getPath().toFile();
         long grammarLastUpdateDate = grammarfile.lastModified();
 
         boolean generationRequired = false;
-        
+
      // We scan all files that the current file depends on.
      // A grammar file can depend on:
      // - a token file generated by another grammar file (tokenVocab option),
@@ -369,32 +420,32 @@ public class Antlr4 extends Task {
         Iterator<ANTLRFile> it = antlrFilesThatIDependOn.iterator();
         while ((it.hasNext()) && (!generationRequired)) {
            ANTLRFile antlrFileThatIDependOn = it.next();
-           File fileThatIDependOn = antlrFileThatIDependOn.getPath().toFile();
+            File fileThatIDependOn = antlrFileThatIDependOn.getPath().toFile();
         // If the file that I depend on does not exist then it is probably a tokens file
-           if (!fileThatIDependOn.exists()) {
+            if (!fileThatIDependOn.exists()) {
             // We check that it is really a tokens file.
             // A grammar file may depend on:
             // - another grammar file (import statement). In that case, it is 
             //   not an artefact and normally that file exists,
             // - a tokens file (tokenVocab option). In that case, it is an 
             //   artefact and it is possible that it was not generated yet.
-               if (antlrFileThatIDependOn.isArtefact()) {
-                   ArrayList<ANTLRFile> antlrSourceFiles = antlrFileThatIDependOn.getFilesThatIDependOn();
-                   if (antlrSourceFiles.size() == 0)
-                       throw new BuildException("Strange the token file " + antlrFileThatIDependOn.getPath() + " has no grammar source");
-                   if (antlrSourceFiles.size() > 1)
-                       throw new BuildException("Strange a token file has several grammar sources: " + antlrFileThatIDependOn.getPath());
-                   ANTLRFile source = (ANTLRFile)antlrSourceFiles.get(0);
-                // Normally, that file is a grammar so it cannot be an artefact
-                   if (source.isArtefact())
-                       throw new BuildException
-                           ("Strange a token file has a source that is not a " +
-                            "grammar: " + antlrFileThatIDependOn.getPath() + 
-                            "\nwith for source: " + source.getPath());
-                   GrammarFile sourceGrammarFile = (GrammarFile) source;
-                   Path relativePath = projectDirectoryPath.relativize(sourceGrammarFile.getPath());
-                   log("Code generation required for " + relativePath);
-                   antlrCodeGenerator.generateCodeFor(sourceGrammarFile);
+                if (antlrFileThatIDependOn.isArtefact()) {
+                    ArrayList<ANTLRFile> antlrSourceFiles = antlrFileThatIDependOn.getFilesThatIDependOn();
+                    if (antlrSourceFiles.size() > 1)
+                        throw new BuildException("Strange a token file has several grammar sources: " + antlrFileThatIDependOn.getPath());
+                    if (!antlrSourceFiles.isEmpty()) {
+                        ANTLRFile source = (ANTLRFile)antlrSourceFiles.get(0);
+                    // Normally, that file is a grammar so it cannot be an artefact
+                        if (source.isArtefact())
+                            throw new BuildException
+                                ("Strange a token file has a source that is not a " +
+                                 "grammar: " + antlrFileThatIDependOn.getPath() + 
+                                 "\nwith for source: " + source.getPath());
+                        GrammarFile sourceGrammarFile = (GrammarFile) source;
+                        Path relativePath = projectDirectoryPath.relativize(sourceGrammarFile.getPath());
+                        log("Code generation required for " + relativePath);
+                        antlrCodeGenerator.generateCodeFor(sourceGrammarFile);
+                    }
                 } else {
                    throw new BuildException("Strange! The file " +
                            antlrFileThatIDependOn.getPath() +
@@ -457,3 +508,9 @@ public class Antlr4 extends Task {
         return generationRequired;
     }
 }
+
+
+/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\Antlr4.class
+ * Java compiler version: 8 (52.0)
+ * JD-Core Version:       0.7.1
+ */

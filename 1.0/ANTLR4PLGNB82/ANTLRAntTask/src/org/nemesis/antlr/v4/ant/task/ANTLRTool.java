@@ -32,6 +32,7 @@ import java.io.File;
 
 class ANTLRTool {
     protected final String antlrLibrary;
+    protected final String importdir;
     protected final String antlrDestdir;
     protected final boolean listener;
     protected final boolean visitor;
@@ -46,7 +47,7 @@ class ANTLRTool {
     protected static final String ANTLR_PACKAGE_OPTION = "-package";
     protected static final String JAVA_CLASSPATH_OPTION = "-cp";
     protected static final String JAVA_EXEC;
-    
+
     static {
         String javaExec = findJavaInterpreter();
         if (javaExec.contains(" ")) {
@@ -56,13 +57,15 @@ class ANTLRTool {
         }
     }
 
-    public ANTLRTool(String  antlrLibrary,
-                     String  antlrDestdir,
+    public ANTLRTool(String  antlrLibrary, 
+                     String  importdir   , 
+                     String  antlrDestdir, 
                      boolean listener    ,
                      boolean visitor     ,
                      String  codePackage ,
                      boolean atn         ) {
         this.antlrLibrary = antlrLibrary;
+        this.importdir = importdir;
         this.antlrDestdir = antlrDestdir;
         this.listener = listener;
         this.visitor = visitor;
@@ -107,3 +110,9 @@ class ANTLRTool {
         return file;
     }
 }
+
+
+/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\ANTLRTool.class
+ * Java compiler version: 8 (52.0)
+ * JD-Core Version:       0.7.1
+ */

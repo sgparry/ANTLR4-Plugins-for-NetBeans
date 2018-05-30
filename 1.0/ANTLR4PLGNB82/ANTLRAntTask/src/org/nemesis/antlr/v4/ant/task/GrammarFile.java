@@ -28,6 +28,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.nemesis.antlr.v4.ant.task;
 
+import java.io.File;
 import java.nio.file.Path;
 
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ class GrammarFile extends ANTLRFile {
     }
 
     @Override
-    protected void recoverDependences() {
+    protected void recoverDependences() throws TaskException {
         ANTLRDependenceRecoverer dependenceRecoverer = ANTLRDependenceRecoverer.getInstance();
         if (dependenceRecoverer == null) {
             throw new BuildException("ANTLR dependence recover not initialized");
@@ -54,33 +55,82 @@ class GrammarFile extends ANTLRFile {
         FileConverter fileConverter = FileConverter.getInstance();
         if (fileConverter == null)
             throw new BuildException("You forgot to initialize the file converter");
-        
+
      // We add the imported grammar files to the list of files that current 
      // grammar depends on
         ArrayList<String> importedGrammarFiles = dependenceRecoverer.getImportedGrammarFiles();
         for (String importedGrammarFile : importedGrammarFiles) {
             Path absoluteImportedGrammarPath = fileConverter.convertIntoAbsoluteSrcPath(importedGrammarFile);
-            ANTLRFile antlrImportedGrammarFile = ANTLRFile.getInstance(absoluteImportedGrammarPath.toString());
-            if (antlrImportedGrammarFile == null) {
-                antlrImportedGrammarFile = ANTLRFileFactory.create(absoluteImportedGrammarPath, null);
+            File importedFile = absoluteImportedGrammarPath.toFile();
+            if (importedFile.exists()) {
+                ANTLRFile antlrImportedGrammarFile = ANTLRFile.getInstance(absoluteImportedGrammarPath.toString());
+                if (antlrImportedGrammarFile == null) {
+                    antlrImportedGrammarFile = ANTLRFileFactory.create(absoluteImportedGrammarPath, null);
+                }
+                this.addFileThatIDependOn(antlrImportedGrammarFile);
+                antlrImportedGrammarFile.addFileThatDependsOnMe(this);
+            } else {
+                absoluteImportedGrammarPath = fileConverter.convertIntoAbsoluteImportPath(importedGrammarFile);
+                if (absoluteImportedGrammarPath != null) {
+                    importedFile = absoluteImportedGrammarPath.toFile();
+                    if (importedFile.exists()) {
+                        ANTLRFile antlrImportedGrammarFile = ANTLRFile.getInstance(absoluteImportedGrammarPath.toString());
+                        if (antlrImportedGrammarFile == null) {
+                            antlrImportedGrammarFile = ANTLRFileFactory.create(absoluteImportedGrammarPath, null);
+                        }
+                        addFileThatIDependOn(antlrImportedGrammarFile);
+                        antlrImportedGrammarFile.addFileThatDependsOnMe(this);
+                    } else {
+                        throw new TaskException("The file " + path + " imports the grammar file called " + importedGrammarFile + "\nBut that file does not exist in antlr.generator.src.dir directory or in antlr.generator.import.dir");
+                    }
+
+                } else {
+
+                    throw new TaskException("The file " + path + " imports the grammar file called " + importedGrammarFile + "\nBut that file does not exist in antlr.generator.src.dir directory");
+                }
             }
-            this.addFileThatIDependOn(antlrImportedGrammarFile);
-            antlrImportedGrammarFile.addFileThatDependsOnMe(this);
         }
-        
+
      // We add the imported tokens files to the list of files that current 
      // grammar depends on
         ArrayList<String> importedTokensFiles = dependenceRecoverer.getImportedTokenFiles();
+        ANTLRFile antlrImportedTokenFile;
         for (String importedTokensFile : importedTokensFiles) {
             Path absoluteImportedTokenFilePath = fileConverter.convertIntoAbsoluteDestPath(importedTokensFile);
-            ANTLRFile antlrImportedTokensFile = ANTLRFile.getInstance(absoluteImportedTokenFilePath.toString());
-            if (antlrImportedTokensFile == null) {
-                antlrImportedTokensFile = ANTLRFileFactory.create(absoluteImportedTokenFilePath, null);
+            File importedFile = absoluteImportedTokenFilePath.toFile();
+            if (importedFile.exists()) {
+                antlrImportedTokenFile = ANTLRFile.getInstance(absoluteImportedTokenFilePath.toString());
+                if (antlrImportedTokenFile == null) {
+                    antlrImportedTokenFile = ANTLRFileFactory.create(absoluteImportedTokenFilePath, null);
+                }
+            } else {
+                absoluteImportedTokenFilePath = fileConverter.convertIntoAbsoluteImportPath(importedTokensFile);
+                if (absoluteImportedTokenFilePath != null) {
+                    importedFile = absoluteImportedTokenFilePath.toFile();
+                    if (importedFile.exists()) {
+                        antlrImportedTokenFile = ANTLRFile.getInstance(absoluteImportedTokenFilePath.toString());
+                        if (antlrImportedTokenFile == null) {
+                            antlrImportedTokenFile = ANTLRFileFactory.create(absoluteImportedTokenFilePath, null);
+                        }
+                    } else {
+                        absoluteImportedTokenFilePath = fileConverter.convertIntoAbsoluteDestPath(importedTokensFile);
+                        antlrImportedTokenFile = ANTLRFile.getInstance(absoluteImportedTokenFilePath.toString());
+                        if (antlrImportedTokenFile == null) {
+                            antlrImportedTokenFile = ANTLRFileFactory.create(absoluteImportedTokenFilePath, null);
+                        }
+                    }
+                } else {
+                    absoluteImportedTokenFilePath = fileConverter.convertIntoAbsoluteDestPath(importedTokensFile);
+                    antlrImportedTokenFile = ANTLRFile.getInstance(absoluteImportedTokenFilePath.toString());
+                    if (antlrImportedTokenFile == null) {
+                        antlrImportedTokenFile = ANTLRFileFactory.create(absoluteImportedTokenFilePath, null);
+                    }
+                }
             }
-            this.addFileThatIDependOn(antlrImportedTokensFile);
-            antlrImportedTokensFile.addFileThatDependsOnMe(this);
+            this.addFileThatIDependOn(antlrImportedTokenFile);
+            antlrImportedTokenFile.addFileThatDependsOnMe(this);
         }
-        
+
      // We add the generated files to the list of files that depends on current 
      // grammar
         ArrayList<String> generatedFiles = dependenceRecoverer.getGeneratedFiles();
@@ -95,3 +145,9 @@ class GrammarFile extends ANTLRFile {
         }
     }
 }
+
+
+/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\GrammarFile.class
+ * Java compiler version: 8 (52.0)
+ * JD-Core Version:       0.7.1
+ */

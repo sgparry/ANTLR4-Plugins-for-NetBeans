@@ -39,18 +39,18 @@ abstract class ANTLRFile {
     public static ANTLRFile getInstance(String pathName) {
         return (ANTLRFile)instances.get(pathName);
     }
-    
+
     
     protected final Path                 path;
     protected final ArrayList<ANTLRFile> filesThatDependsOnMe;
     protected final ArrayList<ANTLRFile> filesThatIDependOn;
     private         boolean              dependenceRecovered;
-    
+
     public final Path getPath() {
         return this.path;
     }
 
-    public final ArrayList<ANTLRFile> getFilesThatDependOnMe() {
+    public final ArrayList<ANTLRFile> getFilesThatDependOnMe() throws TaskException {
         if (!this.dependenceRecovered) {
             this.dependenceRecovered = true;
             recoverDependences();
@@ -58,7 +58,7 @@ abstract class ANTLRFile {
         return this.filesThatDependsOnMe;
     }
 
-    public final ArrayList<ANTLRFile> getFilesThatIDependOn() {
+    public final ArrayList<ANTLRFile> getFilesThatIDependOn() throws TaskException {
         if (!this.dependenceRecovered) {
             this.dependenceRecovered = true;
             recoverDependences();
@@ -84,5 +84,11 @@ abstract class ANTLRFile {
 
 
     public abstract boolean isArtefact();
-    protected abstract void recoverDependences();
+    protected abstract void recoverDependences() throws TaskException;
 }
+
+
+/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\ANTLRFile.class
+ * Java compiler version: 8 (52.0)
+ * JD-Core Version:       0.7.1
+ */

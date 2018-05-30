@@ -588,11 +588,11 @@ OPT_DOC_COMMENT
    ;
 
 OPT_BLOCK_COMMENT
-   : BlockComment -> type (BLOCK_COMMENT), skip
+   : BlockComment -> skip
    ;
 
 OPT_LINE_COMMENT
-   : LineComment -> type (LINE_COMMENT), skip
+   : LineComment -> skip
    ;
 
 OPT_LBRACE
@@ -648,7 +648,7 @@ OPT_SEMI
    ;
 
 OPT_WS
-   : Ws + -> type (WS), skip
+   : Ws + -> skip
    ;
 
 OPT_ERR :
@@ -662,11 +662,11 @@ TOK_DOC_COMMENT
    ;
 
 TOK_BLOCK_COMMENT
-   : BlockComment -> type (BLOCK_COMMENT), skip
+   : BlockComment -> skip
    ;
 
 TOK_LINE_COMMENT
-   : LineComment -> type (LINE_COMMENT), skip
+   : LineComment -> skip
    ;
 
 TOK_LBRACE
@@ -698,7 +698,7 @@ TOK_COMMA
    ;
 
 TOK_WS
-   : Ws + -> type (WS) , skip
+   : Ws + -> skip
    ;
 
 // -------------------------
@@ -709,11 +709,11 @@ CHN_DOC_COMMENT
    ;
 
 CHN_BLOCK_COMMENT
-   : BlockComment -> type (BLOCK_COMMENT), skip
+   : BlockComment -> skip
    ;
 
 CHN_LINE_COMMENT
-   : LineComment -> type (LINE_COMMENT), skip
+   : LineComment -> skip
    ;
 
 CHN_LBRACE
@@ -738,7 +738,7 @@ CHN_COMMA
    ;
 
 CHN_WS
-   : Ws + -> type (WS) , skip
+   : Ws + -> skip
    ;
 
 /******************
@@ -747,7 +747,7 @@ CHN_WS
 mode LexerCommands;
 
 LEXER_COMMAND_LINE_COMMENT :
-    LineComment -> type (LINE_COMMENT), skip
+    LineComment -> skip
     ;
 
 SKIP_COMMAND :
@@ -799,7 +799,7 @@ LEXER_COMMAND_COMMA :
     ;
 
 LEXER_COMMAND_WS :
-    Ws + -> type(WS), skip
+    Ws + -> skip
     ;
 
 LEXER_COMMAND_SEMI :

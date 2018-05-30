@@ -33,21 +33,23 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.util.ArrayList;
-
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.tools.ant.BuildException;
 
 class ANTLRCodeGenerator extends ANTLRTool {
     public ANTLRCodeGenerator(String  antlrLibrary,
+                              String  importdir   ,
                               String  antlrDestdir,
                               boolean listener    ,
                               boolean visitor     ,
                               String  codePackage ,
                               boolean atn         ) {
-        super(antlrLibrary, antlrDestdir, listener, visitor, codePackage, atn);
+        super(antlrLibrary, importdir, antlrDestdir, listener, visitor, codePackage, atn);
     }
 
-
-    public void generateCodeFor(GrammarFile grammarFile) {
+    
+    public void generateCodeFor(GrammarFile grammarFile) throws TaskException {
         ArrayList<String> processParameters = new ArrayList();
         processParameters.add(JAVA_EXEC);
         processParameters.add("-cp");
@@ -60,7 +62,7 @@ class ANTLRCodeGenerator extends ANTLRTool {
         Path absoluteGrammarFilePath = grammarFile.getPath();
         FileConverter fileConverter = FileConverter.getInstance();
         if (fileConverter == null)
-            System.err.println("You forgot to initialize the file converter");
+            throw new TaskException("You forgot to initialize the file converter");
         Path relativeGrammarFilePath = fileConverter.convertIntoRelativeSrcPath(absoluteGrammarFilePath.toString());
         Path grammarRootDir = relativeGrammarFilePath.getParent();
 //        System.out.println("ANTLRCodeGenerator: relative grammar file path = " + grammarRootDir);
@@ -71,6 +73,10 @@ class ANTLRCodeGenerator extends ANTLRTool {
         } else {
             processParameters.add("-o");
             processParameters.add(antlrDestdir);
+        }
+        if (importdir != null) {
+            processParameters.add("-lib");
+            processParameters.add(importdir);
         }
         if (!listener)
             processParameters.add("-no-listener");
@@ -83,16 +89,16 @@ class ANTLRCodeGenerator extends ANTLRTool {
         if (atn)
             processParameters.add("-atn");
         String filePathName = grammarFile.getPath().toString();
-        processParameters.add(filePathName);    
+        processParameters.add(filePathName);
 
         ProcessBuilder pb = new ProcessBuilder(processParameters);
         try {
             Process p = pb.start();
             ANTLROutputRecoverer standardConsumer =
-                                   new ANTLROutputRecoverer(p.getInputStream());
+                    new ANTLROutputRecoverer(p.getInputStream());
             standardConsumer.start();
             ANTLROutputRecoverer errorConsumer =
-                                   new ANTLROutputRecoverer(p.getErrorStream());
+                    new ANTLROutputRecoverer(p.getErrorStream());
             errorConsumer.start();
          // We wait for the end of code generation process
             int result = p.waitFor();
@@ -103,8 +109,8 @@ class ANTLRCodeGenerator extends ANTLRTool {
          // If the code generation does not end with success
             if (result != 0) {
                 System.err.println("Error during ANTLR code generation:");
-                System.err.println(errorConsumer.getOutput());
-                throw new BuildException();
+                System.err.println(adaptToAntStandardLogger(errorConsumer.getOutput(), grammarFile));
+                throw new BuildException("antlr4 task end due to error");
             }
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -123,4 +129,45 @@ class ANTLRCodeGenerator extends ANTLRTool {
             throw new BuildException("Strange! ANTLR tool interrupted");
         }
     }
+
+    protected String ANTLR_ERROR_PATTERN_STRING = "([a-zA-Z]+)\\(\\d+\\):[ ]*([a-zA-Z0-9_]+\\.g4):(\\d+):(\\d+):([^\\n]+)\\n";
+
+    protected final Pattern ANTLR_ERROR_PATTERN = Pattern.compile(ANTLR_ERROR_PATTERN_STRING);
+
+    protected String adaptToAntStandardLogger(String errorMessagesToBeAdapted, GrammarFile grammarFile) {
+        Matcher matcher = ANTLR_ERROR_PATTERN.matcher(errorMessagesToBeAdapted);
+        StringBuilder newMessage = new StringBuilder();
+        while (matcher.find()) {
+            int start = matcher.start();
+            int end = matcher.end();
+
+            String errorOrWarning = matcher.group(1);
+
+            String line = matcher.group(3);
+
+            String column = matcher.group(4);
+
+            String description = matcher.group(5);
+
+            newMessage.append(grammarFile.getPath());
+            newMessage.append(":");
+            newMessage.append(line);
+            newMessage.append(": ");
+            newMessage.append(errorOrWarning);
+            newMessage.append(":");
+            newMessage.append(description);
+            newMessage.append("\n");
+        }
+        String answer = newMessage.toString();
+        if (answer.equals("")) {
+            answer = errorMessagesToBeAdapted;
+        }
+        return answer;
+    }
 }
+
+
+/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\ANTLRCodeGenerator.class
+ * Java compiler version: 8 (52.0)
+ * JD-Core Version:       0.7.1
+ */

@@ -26,28 +26,18 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
 OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF 
 ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package org.nemesis.antlr.v4.ant.task.depend.parser.listener;
+package org.nemesis.antlr.v4.ant.task;
 
-/**
- *
- * @author Frédéric Yvon Vinet
- */
-public enum GrammarType {
-    LEXER("lexer"), PARSER("parser"), COMBINED("combined"), UNDEFINED("undefined");
-
-    private final String value;
-    private GrammarType (String value) {
-        this.value = value;
-    }
-
-    @Override
-    public String toString() {
-        return value;
-    }
+public class TaskException extends Exception
+{
+  public TaskException(String message)
+  {
+    super(message);
+  }
 }
 
 
-/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\depend\parser\listener\GrammarType.class
+/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\TaskException.class
  * Java compiler version: 8 (52.0)
  * JD-Core Version:       0.7.1
  */

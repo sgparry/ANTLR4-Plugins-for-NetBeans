@@ -64,6 +64,19 @@
         -->
         <!--Destination for generated Java files.-->
         <mkdir dir="${antlr.generator.dest.dir}"/>
+        <local name="fullPlatformDestDir" />
+        <local name="fullPlatformPackageDestDir" />
+        <!-- convert path to platform -->
+        <pathconvert property="fullPlatformDestDir">
+            <path path="${antlr.generator.dest.dir}/"/>
+        </pathconvert>
+        <!-- then convert the package name to directory path -->
+        <pathconvert property="fullPlatformPackageDestDir">
+            <path path="${antlr.generator.dest.dir}/${antlr.generated.package}" />
+            <mapper type="unpackage" from="${fullPlatformDestDir}*" to="${fullPlatformDestDir}*"></mapper>
+        </pathconvert>
+        <mkdir dir="${fullPlatformPackageDestDir}"/>
+
         <!--Implementation using the ANTLR4 task does not accept multiple
             source files. So use the java task. When grammar files are
             identified by relative paths, the ANTLR Tool produces corresponding
@@ -78,7 +91,7 @@
             <arg path="${antlr.generator.dest.dir}"/>
             <arg value="${antlr.generator.options}"/>
             <arg value="-lib"/>
-            <arg path="${antlr.generator.dest.dir}"/>
+            <arg path="${fullPlatformPackageDestDir}"/>
             <arg value="-package"/>
             <arg value="${antlr.generated.package}"/>
             <arg line="${antlr.temp.src.list}"/>
@@ -90,5 +103,6 @@
             </classpath>
             <jvmarg value="-Xmx512M"/>
         </java>
+
     </target>
 </project>

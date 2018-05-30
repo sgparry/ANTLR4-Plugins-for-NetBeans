@@ -39,7 +39,7 @@ class TokenFile extends ANTLRFile {
     public TokenFile(Path path) {
         super(path);
     }
-    
+
     @Override
     public boolean isArtefact() {
         return true;
@@ -56,7 +56,6 @@ class TokenFile extends ANTLRFile {
             Path sourceGrammarFilePath = fileConverter.convertIntoGrammarFilePath(path);
             File file = sourceGrammarFilePath.toFile();
             if (file.exists()) {
-                System.out.println("TokenFile: dependence of " + this.path + " updated");
                 ANTLRFile antlrSourceGrammarFile = ANTLRFileFactory.create(sourceGrammarFilePath, true);
                 this.addFileThatIDependOn(antlrSourceGrammarFile);
                 antlrSourceGrammarFile.addFileThatDependsOnMe(this);
@@ -64,3 +63,9 @@ class TokenFile extends ANTLRFile {
         }
     }
 }
+
+
+/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\TokenFile.class
+ * Java compiler version: 8 (52.0)
+ * JD-Core Version:       0.7.1
+ */

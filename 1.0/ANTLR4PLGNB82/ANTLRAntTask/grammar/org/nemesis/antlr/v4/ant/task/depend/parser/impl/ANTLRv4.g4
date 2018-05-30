@@ -82,11 +82,12 @@ grammarType :
 // the set of rules that compose the grammar, and is invoked 0..n
 // times by the analyzerDirectiveSpec rule.
 analyzerDirectiveSpec :
-    optionsSpec |
-    delegateGrammars |
-    tokensSpec |
-    channelsSpec |
-    action
+    DOC_COMMENT*
+    (optionsSpec      |
+     delegateGrammars |
+     tokensSpec       |
+     channelsSpec     |
+     action            )
     ;
 
 // ------------
@@ -268,7 +269,7 @@ altList
    ;
 
 parserRuleAlternative
-   : parserRuleElement+
+   :  elementOptions? parserRuleElement+
    |
    // explicitly allow empty alts
    ;
@@ -278,7 +279,7 @@ parserRuleElement :
     parserRuleAtom ebnfSuffix? |
     ebnf |
     actionBlock |
-    actionBlock QUESTION elementOptions?
+    actionBlock QUESTION?
     ;
 
 labeledParserRuleElement
@@ -312,7 +313,15 @@ lexerRuleSpec :
     ;
 
 lexerRuleDeclaration :
-    tokenIdentifier |
+    tokenRuleDeclaration |
+    fragmentRuleDeclaration
+    ;
+
+tokenRuleDeclaration :
+    tokenIdentifier
+    ;
+
+fragmentRuleDeclaration :
     FRAGMENT identifier
     ;
 

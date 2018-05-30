@@ -36,15 +36,17 @@ class FileConverter {
     
     private final String absoluteSrcDir;
     private final String absoluteDestDir;
+    private final String absoluteImportDir;
 
     public static FileConverter getInstance() {
         return instance;
     }
 
-    public FileConverter(String absoluteSrcDir, String absoluteDestDir) {
+    public FileConverter(String absoluteSrcDir, String absoluteDestDir, String absoluteImportDir) {
         instance = this;
         this.absoluteSrcDir = absoluteSrcDir;
         this.absoluteDestDir = absoluteDestDir;
+        this.absoluteImportDir = absoluteImportDir;
     }
 
 
@@ -55,22 +57,40 @@ class FileConverter {
         StringBuilder grammarFileName = new StringBuilder();
         grammarFileName.append(grammarName);
         grammarFileName.append(".g4");
-        return Paths.get(absoluteSrcDir, grammarFileName.toString());
+        Path absoluteDestDirPath = Paths.get(absoluteDestDir);
+        Path relativeTokenDirPath = absoluteDestDirPath.relativize(tokenFilePath.getParent());
+        return Paths.get(absoluteSrcDir, relativeTokenDirPath.toString(), grammarFileName.toString());
     }
-    
+
 
     public Path convertIntoAbsoluteDestPath(String artefactFileRelativePath) {
         return Paths.get(absoluteDestDir, artefactFileRelativePath);
     }
-    
+
     
     public Path convertIntoAbsoluteSrcPath(String grammarFileRelativePath) {
         return Paths.get(absoluteSrcDir, grammarFileRelativePath);
     }
-    
+
+    public Path convertIntoAbsoluteImportPath(String grammarFileRelativePath) {
+        Path answer;
+        if (absoluteImportDir == null) {
+            answer = null;
+        } else {
+            answer = Paths.get(absoluteImportDir, grammarFileRelativePath);
+        }
+        return answer;
+    }
+
     public Path convertIntoRelativeSrcPath(String grammarFileAbsolutePath) {
         Path absoluteSrcDirPath = Paths.get(absoluteSrcDir);
         Path grammarFileAbsolutePath2 = Paths.get(grammarFileAbsolutePath);
         return absoluteSrcDirPath.relativize(grammarFileAbsolutePath2);
     }
 }
+
+
+/* Location:              C:\Users\sparry\ownCloud\development\NetbeansProjects\A4P4NB\1.2.1\ANTLR4PLGNB802\src\org\nemesis\antlr\v4\netbeans\v8\project\ANTLRAntTask-1.2.jar!\org\nemesis\antlr\v4\ant\task\FileConverter.class
+ * Java compiler version: 8 (52.0)
+ * JD-Core Version:       0.7.1
+ */
