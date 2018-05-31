@@ -1,4 +1,4 @@
-/*
+/*  *** UP-TO-DATE SOURCE MISSING - PARTIALLY REVERSE ENGINEERED ****
 BSD License
 
 Copyright (c) 2016, Frédéric Yvon Vinet
