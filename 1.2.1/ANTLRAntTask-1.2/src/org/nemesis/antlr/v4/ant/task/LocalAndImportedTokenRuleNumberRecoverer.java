@@ -38,7 +38,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.tools.ant.BuildException;
 import org.nemesis.antlr.v4.ant.task.depend.parser.impl.ANTLRv4Lexer;
@@ -97,7 +98,7 @@ public class LocalAndImportedTokenRuleNumberRecoverer {
         try (
             InputStream is = new FileInputStream(grammarFilePath.toFile())
         ) {
-            ANTLRInputStream input = new ANTLRInputStream(is);
+            CharStream input = CharStreams.fromStream(is);
             ANTLRv4Lexer lexer = new ANTLRv4Lexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ANTLRv4Parser parser = new ANTLRv4Parser(tokens);

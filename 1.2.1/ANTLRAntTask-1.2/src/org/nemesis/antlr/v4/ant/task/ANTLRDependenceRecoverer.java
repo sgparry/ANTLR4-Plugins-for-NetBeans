@@ -44,7 +44,8 @@ import org.nemesis.antlr.v4.ant.task.depend.parser.impl.ANTLRv4Parser;
 import org.nemesis.antlr.v4.ant.task.depend.parser.listener.GrammarType;
 import org.nemesis.antlr.v4.ant.task.depend.parser.listener.InfoCollector;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 
 import org.apache.tools.ant.BuildException;
@@ -140,7 +141,7 @@ class ANTLRDependenceRecoverer {
          //   depends on!!!
          // - if a parser grammar has no rule, ANTLR generator generates no 
          //   parser Java class but it appears in the list of dependent files.
-            ANTLRInputStream input = new ANTLRInputStream(is);
+            CharStream input = CharStreams.fromStream(is);
             ANTLRv4Lexer lexer = new ANTLRv4Lexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             ANTLRv4Parser parser = new ANTLRv4Parser(tokens);

@@ -147,7 +147,7 @@ public class Antlr4 extends Task {
      // attribute, basedir is an ant built-in property)
      // It is not possible to do it in constructor because ant initialize project
      // attribute after the instantiation of the Task
-        projectDirectory = project.getProperty("basedir");
+        projectDirectory = getProject().getProperty("basedir");
         projectDirectoryPath = Paths.get(projectDirectory);
         
         checkMandatoryAttributePresence();
