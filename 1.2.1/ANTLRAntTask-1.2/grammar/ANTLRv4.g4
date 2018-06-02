@@ -269,7 +269,7 @@ altList
    ;
 
 parserRuleAlternative
-   : parserRuleElement+
+   : elementOptions? parserRuleElement+
    |
    // explicitly allow empty alts
    ;
@@ -279,7 +279,7 @@ parserRuleElement :
     parserRuleAtom ebnfSuffix? |
     ebnf |
     actionBlock |
-    actionBlock QUESTION elementOptions?
+    actionBlock QUESTION?
     ;
 
 labeledParserRuleElement
