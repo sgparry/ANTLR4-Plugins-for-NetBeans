@@ -31,6 +31,7 @@ package org.nemesis.antlr.v4.netbeans.v8.grammar.code.checking;
 import java.io.File;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 
 import java.util.List;
 
@@ -153,12 +154,12 @@ public class NBANTLRv4Parser extends Parser {
         
         @Override
         public List<ParsingError> getDiagnostics() {
-            List<ParsingError> answer = errorListener.getParsingError();
+            List<ParsingError> answer = new ArrayList<>();
+            answer.addAll(errorListener.getParsingError());
             if (semanticParser != null) {
                 answer.addAll(semanticParser.getSemanticErrors());
                 answer.addAll(semanticParser.getSemanticWarnings());
             }
-
             return answer;
         }
     }

@@ -28,6 +28,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.nemesis.antlr.v4.netbeans.v8.project.helper.java;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -312,6 +313,8 @@ public class JavaClassHelper {
   * @return 
   */
     public static boolean isExtendingANTLRLexer(JavaClass javaClass) {
+//        System.out.println("JavaClassHelper:isExtendingANTLRLexer(JavaClass) -> boolean : begin");
+//        System.out.println("- Java class=" + javaClass.getFileName());
         assert javaClass != null;
         boolean answer = false;
         try {
@@ -331,6 +334,8 @@ public class JavaClassHelper {
         } catch (ClassNotFoundException ex) {
             ex.printStackTrace();
         }
+//        System.out.println("- answer =" + answer);
+//        System.out.println("JavaClassHelper:isExtendingANTLRLexer(JavaClass) -> boolean : end");
         return answer;
     }
     
@@ -442,28 +447,24 @@ public class JavaClassHelper {
             (Project project, String qualifiedJavaClassName) {
 //        System.out.println("ProjectHelper:getJavaClassInLibraries(Project, String) : begin");
         JavaClass javaClass = null;
-        GlobalPathRegistry gpr = GlobalPathRegistry.getDefault();
-        Set<ClassPath> classPaths = gpr.getPaths(ClassPath.COMPILE);
-        Iterator<ClassPath> classPathIt = classPaths.iterator();
-        
-        ClassPath.Entry entry;
      // We needn't to look for in the build/classes directory of project
-        String projectDir = project.getProjectDirectory().getPath();
-        String localBuildDir = "build/classes";
-        Path localClassPath = Paths.get(projectDir, localBuildDir);
-        URL localURL;
-        Set<URL> alreadyProcessed = new HashSet<>();
+        File buildDir = ProjectHelper.getJavaBuildDirectory(project);
         try {
-            localURL = localClassPath.toUri().toURL();
+            URL buildDirURL = buildDir.toURI().toURL();
 //            System.out.println("- local URL to skip:" + localURL);
 //            System.out.println("- classpath content:");
             ClassPath classPath;
             List<ClassPath.Entry> entries;
             boolean found = false;
+            Set<URL> alreadyProcessed = new HashSet<>();
+            GlobalPathRegistry gpr = GlobalPathRegistry.getDefault();
+            Set<ClassPath> classPaths = gpr.getPaths(ClassPath.COMPILE);
+            Iterator<ClassPath> classPathIt = classPaths.iterator();
             while (classPathIt.hasNext() && !found) {
                 classPath = classPathIt.next();
                 entries = classPath.entries();
                 Iterator<ClassPath.Entry> entryIt = entries.iterator();
+                ClassPath.Entry entry;
                 while (entryIt.hasNext() && !found) {
                     entry = entryIt.next();
                     URL url = entry.getURL();
@@ -472,7 +473,7 @@ public class JavaClassHelper {
                  // We must only process .jar files (ANTLR runtime and complete
                  // libraries excepted) and already processed libraries must not
                  // be processed twice
-                    if (!url.equals(localURL)           &&
+                    if (!url.equals(buildDirURL)        &&
                         !alreadyProcessed.contains(url) &&
                         jarPath.contains(".jar")           ) {
 //                        System.out.println("    That URL must be processed");

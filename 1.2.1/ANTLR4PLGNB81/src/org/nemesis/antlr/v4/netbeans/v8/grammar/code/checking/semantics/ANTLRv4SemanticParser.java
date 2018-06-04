@@ -32,8 +32,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.nio.file.Files;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -48,8 +48,10 @@ import java.util.Map;
 import java.util.Set;
 
 import java.util.logging.Logger;
+
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
@@ -84,9 +86,8 @@ import org.nemesis.antlr.v4.netbeans.v8.grammar.code.checking.impl.ANTLRv4Parser
 import org.nemesis.antlr.v4.netbeans.v8.grammar.code.checking.impl.ANTLRv4Parser.SuperClassSpecContext;
 import org.nemesis.antlr.v4.netbeans.v8.grammar.code.checking.impl.ANTLRv4Parser.TerminalContext;
 import org.nemesis.antlr.v4.netbeans.v8.grammar.code.checking.impl.ANTLRv4Parser.TokenRuleDeclarationContext;
-import org.nemesis.antlr.v4.netbeans.v8.grammar.code.summary.Collector;
 
-import org.nemesis.antlr.v4.netbeans.v8.grammar.code.summary.GrammarDeclaration;
+import org.nemesis.antlr.v4.netbeans.v8.grammar.code.summary.Collector;
 import org.nemesis.antlr.v4.netbeans.v8.grammar.code.summary.GrammarSummary;
 import org.nemesis.antlr.v4.netbeans.v8.grammar.code.summary.GrammarType;
 import org.nemesis.antlr.v4.netbeans.v8.grammar.code.summary.RuleReference;
@@ -324,6 +325,7 @@ public class ANTLRv4SemanticParser extends ANTLRv4BaseListener {
     
     @Override
     public void exitSuperClassSpec(SuperClassSpecContext ctx) {
+//        System.out.println("ANTLRv4SemanticParser:exitSuperClassSpec(SuperClassSpecContext) : begin");
      // A class identifier may contain a package name so identifier returns
      // a list of identifiers
         ClassIdentifierContext cic = ctx.classIdentifier();
@@ -339,7 +341,7 @@ public class ANTLRv4SemanticParser extends ANTLRv4BaseListener {
                     String description = displayName;
                     File file = new File(parsedFileName);
                     FileObject fo = FileUtil.toFileObject(file);
-                    ParsingError semanticWarning = new ParsingError
+                    ParsingError semanticError = new ParsingError
                                 (fo            ,
                                  Severity.ERROR,
                                  key           ,
@@ -347,7 +349,7 @@ public class ANTLRv4SemanticParser extends ANTLRv4BaseListener {
                                  stopOffset    ,
                                  displayName   ,
                                  description   );
-                    semanticErrors.add(semanticWarning);
+                    semanticErrors.add(semanticError);
                 }
             } else {
                 int targetStart = cic.getStart().getStartIndex();
@@ -373,12 +375,12 @@ public class ANTLRv4SemanticParser extends ANTLRv4BaseListener {
              // - in target/generated-sources/antlr4 concatenated with its potential 
              //   package transformed in directory structure if project is Maven-based.
                 File srcDir = ProjectHelper.getJavaSourceDir(project);
-                boolean error = false;
                 if (srcDir != null) {
                     Path superClassPath = Paths.get(srcDir.getPath()        ,
                                                     superClassFilePathString);
                     File superClassFile = superClassPath.toFile();
-//                    System.out.println("superClassFile=" + superClassFile.getPath());
+//                    System.out.println("- super class file=" +
+//                                       superClassFile.getPath());
                  // If there is no package defined in superClass then there may be a 
                  // Java import statement telling where to find the source
                     if ("".equals(superClassPackage)) {
@@ -393,8 +395,7 @@ public class ANTLRv4SemanticParser extends ANTLRv4BaseListener {
                             importedClassName = fullQualifiedImportedClassName.substring(start + 1);
                          // here classNameWithPackage is just a class name  
                          // because superClassPackageName is empty
-//                            System.out.println("importedClassName=" + importedClassName);
-//                            System.out.println("targetWord=" + targetWord);
+//                            System.out.println("- imported class name=" + importedClassName);
                             if (importedClassName.equals(className)) {
                                 importFound = true;
                                 fullQualifiedSuperClass =
@@ -404,7 +405,8 @@ public class ANTLRv4SemanticParser extends ANTLRv4BaseListener {
                                                                      (".", "/");
                                 superClassFilePathString =
                                              superClassFilePathString + ".java";
-//                                System.out.println("superClassFilePathString 2=" + superClassFilePathString);
+//                                System.out.println("- super class file path="
+//                                                  + superClassFilePathString);
                                 superClassPath = Paths.get
                                                      (srcDir.getPath()        ,
                                                       superClassFilePathString);
@@ -414,63 +416,92 @@ public class ANTLRv4SemanticParser extends ANTLRv4BaseListener {
                     }
                  // Now if the class has a package it is found so we can look
                  // for our Java source in the project directories
-                    if (superClassFile.exists()) {
-                     // The Java source class file has been found in source directory
-                        error = false;
-                    } else {
+                    if (!superClassFile.exists()) {
                      // The class source has not been found in project 
                      // directories so perhaps there is a corresponding .class 
                      // file in project libraries
+//                        System.out.println("- file not found in source directory of current project");
                         JavaClass javaSuperClass =
                                          JavaClassHelper.getJavaClassInLibraries
                                              (project, fullQualifiedSuperClass);
                         if (javaSuperClass == null) {
-                         // We didn't find our token class in project libraries 
+                         // We didn't find our super class in project libraries 
                          // either so this class is not accessible or does not exist
-                            error = true;
+                            if (semanticErrorRequired) {
+                                String key = "antlr.error.super.class.not." +
+                                             "found";
+                                String displayName = "unable to find super" +
+                                      " class in Java sources or in libraries" +
+                                      " of current project";
+                                String description = displayName;
+                                File file = new File(parsedFileName);
+                                FileObject fo = FileUtil.toFileObject(file);
+                                ParsingError semanticError = new ParsingError
+                                    (fo            ,
+                                     Severity.ERROR,
+                                     key           ,
+                                     targetStart   ,
+                                     targetEnd     ,
+                                     displayName   ,
+                                     description   );
+                                semanticErrors.add(semanticError);
+                            }
                         } else {
                          // We have found a class in one of project libraries
                          // but is it implementing a valid Lexer or parser 
                          // class?
                             switch (grammarType) {
                             case LEXER:
-                                error = !JavaClassHelper.isExtendingANTLRLexer
-                                                               (javaSuperClass);
+                                if (!JavaClassHelper.isExtendingANTLRLexer
+                                                            (javaSuperClass) &&
+                                    semanticErrorRequired) {
+                                    String key = "antlr.error.super.class.invalid";
+                                    String displayName = "super class found " +
+                                           "but is not extending ANTLR Lexer," +
+                                           "or LexerInterpreter or XPathLexer";
+                                    String description = displayName;
+                                    File file = new File(parsedFileName);
+                                    FileObject fo = FileUtil.toFileObject(file);
+                                    ParsingError semanticError = new ParsingError
+                                        (fo            ,
+                                         Severity.ERROR,
+                                         key           ,
+                                         targetStart   ,
+                                         targetEnd     ,
+                                         displayName   ,
+                                         description   );
+                                    semanticErrors.add(semanticError);
+                                }
                                 break;
                             case PARSER:
                             case COMBINED:
-                                error = !JavaClassHelper.isExtendingANTLRParser
-                                                               (javaSuperClass);
+                                if (!JavaClassHelper.isExtendingANTLRParser
+                                                            (javaSuperClass) &&
+                                    semanticErrorRequired) {
+                                    String key = "antlr.error.super.class.invalid";
+                                    String displayName = "super class found but is not extending ANTLR Parser";
+                                    String description = displayName;
+                                    File file = new File(parsedFileName);
+                                    FileObject fo = FileUtil.toFileObject(file);
+                                    ParsingError semanticError = new ParsingError
+                                        (fo            ,
+                                         Severity.ERROR,
+                                         key           ,
+                                         targetStart   ,
+                                         targetEnd     ,
+                                         displayName   ,
+                                         description   );
+                                    semanticErrors.add(semanticError);
+                                }
                                 break;
                             default:
-                            };
+                            }
                         }
                     }
-
-                    if (error && semanticErrorRequired) {
-                        String key = "antlr.error.super.class.source.missing";
-                        String displayName = "unable to find super class Java source";
-                        String description = displayName;
-                        File file = new File(parsedFileName);
-                        FileObject fo = FileUtil.toFileObject(file);
-                        ParsingError semanticWarning = new ParsingError
-                                (fo            ,
-                                 Severity.ERROR,
-                                 key           ,
-                                 targetStart   ,
-                                 targetEnd     ,
-                                 displayName   ,
-                                 description   );
-                        semanticErrors.add(semanticWarning);
-                    }
-                } else {
-                 // No source directory has been found
-                 // It means that the project type is not managed. We do not 
-                 // generate error message in such a case for enabling to use 
-                 // the plugin (color editing and syntax checking).
                 }
             }
         }
+//        System.out.println("ANTLRv4SemanticParser:exitSuperClassSpec(SuperClassSpecContext) : end");
     }
 
     

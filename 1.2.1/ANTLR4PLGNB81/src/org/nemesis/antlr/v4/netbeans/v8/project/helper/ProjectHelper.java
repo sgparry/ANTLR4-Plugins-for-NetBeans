@@ -270,6 +270,30 @@ public class ProjectHelper {
     }
     
     
+    public static File getJavaBuildDirectory(Project project) {
+        ProjectType projectType = ProjectHelper.getProjectType(project);
+        String localBuildDir;
+        switch (projectType) {
+        case ANT_BASED:
+            localBuildDir = "build/classes";
+            break;
+        case MAVEN_BASED:
+            localBuildDir = "target/classes";
+            break;
+        default:
+            localBuildDir = null;
+        }
+        File buildDir;
+        if (localBuildDir != null) {
+            FileObject projectDirFO = project.getProjectDirectory();
+            FileObject buildDirFO = projectDirFO.getFileObject(localBuildDir);
+            buildDir = FileUtil.toFile(buildDirFO);
+        } else
+            buildDir = null;
+        return buildDir;
+    }
+    
+    
  /**
   * Find ANTLR grammar names that a grammar in a given document could import
   * whether associated project is ant-based or Maven-based.
