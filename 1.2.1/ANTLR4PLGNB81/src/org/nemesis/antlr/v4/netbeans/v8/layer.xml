@@ -40,10 +40,10 @@
     </folder>
     <folder name="org-netbeans-api-project-libraries">
         <folder name="Libraries">
-            <file name="ANTLR_4.6_complete.xml"
-                  url="ANTLR_4.6_complete.xml"/>
-            <file name="ANTLR_4.6_runtime.xml"
-                  url="ANTLR_4.6_runtime.xml"/>
+            <file name="ANTLR_4.7.1_complete.xml"
+                  url="ANTLR_4.7.1_complete.xml"/>
+            <file name="ANTLR_4.7.1_runtime.xml"
+                  url="ANTLR_4.7.1_runtime.xml"/>
         </folder>
     </folder>
 </filesystem>

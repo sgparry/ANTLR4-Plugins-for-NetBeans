@@ -30,16 +30,16 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 <!DOCTYPE library PUBLIC "-//NetBeans//DTD Library Declaration 1.0//EN"
                          "http://www.netbeans.org/dtds/library-declaration-1_0.dtd">
 <library version="1.0">
-    <name>ANTLR_4.6_runtime</name>
+    <name>ANTLR_4.7.1_complete</name>
     <type>j2se</type>
     <localizing-bundle>org.nemesis.antlr.v4.netbeans.v8.Bundle</localizing-bundle>
     <volume>
         <type>classpath</type>
-        <resource>jar:nbinst://org.nemesis.antlr.v4.netbeans.v8/libs/antlr-runtime-4.6.jar!/</resource>
+        <resource>jar:nbinst://org.nemesis.antlr.v4.netbeans.v8/libs/antlr-4.7.1-complete.jar!/</resource>
     </volume>
     <volume>
         <type>src</type>
-        <resource>jar:nbinst://org.nemesis.antlr.v4.netbeans.v8/sources/antlr-4.6-source.zip!/</resource>
+        <resource>jar:nbinst://org.nemesis.antlr.v4.netbeans.v8/sources/antlr-4.7.1-source.zip!/</resource>
     </volume>
     <volume>
         <type>javadoc</type>
