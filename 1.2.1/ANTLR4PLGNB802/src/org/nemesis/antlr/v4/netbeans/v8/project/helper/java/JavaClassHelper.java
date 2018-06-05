@@ -29,9 +29,7 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package org.nemesis.antlr.v4.netbeans.v8.project.helper.java;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 
 import java.net.URL;
 
@@ -49,7 +47,8 @@ import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonToken;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
@@ -528,8 +527,8 @@ public class JavaClassHelper {
 //        System.out.println("JavaClassHelper.getSuperClass(Path) -> JavaClass : begin");
         assert javaFilePath != null;
         JavaSourceClass answer;
-        try (Reader sr = new FileReader(javaFilePath.toString()) ) {
-            ANTLRInputStream input = new ANTLRInputStream(sr);
+        try {
+            CharStream input = CharStreams.fromFileName(javaFilePath.toString());
             JavaLexer lexer = new JavaLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             JavaParser parser = new JavaParser(tokens);

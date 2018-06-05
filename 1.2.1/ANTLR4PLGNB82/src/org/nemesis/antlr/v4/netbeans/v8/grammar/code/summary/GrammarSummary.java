@@ -30,13 +30,10 @@ package org.nemesis.antlr.v4.netbeans.v8.grammar.code.summary;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Reader;
-import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 
 import java.nio.file.Files;
@@ -58,7 +55,8 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.StyledDocument;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CodePointCharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 
@@ -722,30 +720,28 @@ public class GrammarSummary {
                         try {
                             String content = importedGrammarDoc.getText
                                             (0, importedGrammarDoc.getLength());
-                            try (Reader sr = new StringReader(content) ) {
-                                ANTLRInputStream input = new ANTLRInputStream(sr);
-                                ANTLRv4Lexer lexer = new ANTLRv4Lexer(input);
-            
-                                CommonTokenStream tokens = new CommonTokenStream
-                                                                        (lexer);
-                                ANTLRv4Parser parser = new ANTLRv4Parser(tokens);
-                                parser.removeErrorListeners(); // remove ConsoleErrorListener
-                             // We add a collector in charge of collecting a 
-                             // summary of grammar (summary is attached to 
-                             // parsed document as a property with
-                             // GrammarSummary.class as a key)
-                                Collector collector = new Collector
-                                                     (doc, importedGrammarPath);
-                                parser.addParseListener(collector);
-                             // We parser the document content with only a 
-                             // collector. So at the end of parsing, document 
-                             // has a property containing our summary
-                                parser.grammarFile();
-                             // Now a summary is attached to our imported document
-                                summary = (GrammarSummary)
-                                                  importedGrammarDoc.getProperty
-                                                         (GrammarSummary.class);
-                            }
+                            CodePointCharStream input = CharStreams.fromString(content);
+                            ANTLRv4Lexer lexer = new ANTLRv4Lexer(input);
+
+                            CommonTokenStream tokens = new CommonTokenStream
+                                                                    (lexer);
+                            ANTLRv4Parser parser = new ANTLRv4Parser(tokens);
+                            parser.removeErrorListeners(); // remove ConsoleErrorListener
+                         // We add a collector in charge of collecting a 
+                         // summary of grammar (summary is attached to 
+                         // parsed document as a property with
+                         // GrammarSummary.class as a key)
+                            Collector collector = new Collector
+                                                 (doc, importedGrammarPath);
+                            parser.addParseListener(collector);
+                         // We parser the document content with only a 
+                         // collector. So at the end of parsing, document 
+                         // has a property containing our summary
+                            parser.grammarFile();
+                         // Now a summary is attached to our imported document
+                            summary = (GrammarSummary)
+                                              importedGrammarDoc.getProperty
+                                                     (GrammarSummary.class);
                         } catch(BadLocationException ex) {
                          // With thiese parameter values it is not possible to 
                          // have an exception of this type
@@ -959,29 +955,25 @@ public class GrammarSummary {
                     try {
                         String content = importedTokensDoc.getText
                                              (0, importedTokensDoc.getLength());
-                        try (Reader sr = new StringReader(content) ) {
-                            ANTLRInputStream input = new ANTLRInputStream(sr);
-                            TokensLexer lexer = new TokensLexer(input);
-                            CommonTokenStream tokens = new CommonTokenStream(lexer);  
-                            TokensParser tokensParser = new TokensParser(tokens);
-                            tokensParser.removeErrorListeners(); // remove ConsoleErrorListener
-                        
-                            org.nemesis.antlr.v4.netbeans.v8.tokens.code.summary.Collector collector = new org.nemesis.antlr.v4.netbeans.v8.tokens.code.summary.Collector(importedTokensDoc, importedTokensFilePath);
-                            tokensParser.addParseListener(collector);
-                        
-                            tokensParser.token_declarations();
+                        CodePointCharStream input = CharStreams.fromString(content);
+                        TokensLexer lexer = new TokensLexer(input);
+                        CommonTokenStream tokens = new CommonTokenStream(lexer);  
+                        TokensParser tokensParser = new TokensParser(tokens);
+                        tokensParser.removeErrorListeners(); // remove ConsoleErrorListener
+
+                        org.nemesis.antlr.v4.netbeans.v8.tokens.code.summary.Collector collector = new org.nemesis.antlr.v4.netbeans.v8.tokens.code.summary.Collector(importedTokensDoc, importedTokensFilePath);
+                        tokensParser.addParseListener(collector);
+
+                        tokensParser.token_declarations();
 //                            System.out.println("  document parsed");
-                         // the tokens file has been parsed with a Collector so
-                         // we must find a summary attached to our document
-                            summary = 
-                                   (TokensSummary) importedTokensDoc.getProperty
-                                                          (TokensSummary.class);
-                        }
+                     // the tokens file has been parsed with a Collector so
+                     // we must find a summary attached to our document
+                        summary = 
+                               (TokensSummary) importedTokensDoc.getProperty
+                                                      (TokensSummary.class);
                     } catch (BadLocationException ex) {
                       // Impossible that such exception appears with the
                       // chosen parameters of getText()
-                    } catch (IOException ex) {
-                        System.err.println("Strange! Unable to read the String Buffer");
                     } catch (RecognitionException ex) {
                         System.err.println(ex.toString());
                     }

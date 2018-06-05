@@ -28,9 +28,6 @@ ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 package org.nemesis.antlr.v4.netbeans.v8.tokens.code.checking;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
 
 import java.nio.file.Path;
 
@@ -42,7 +39,8 @@ import javax.swing.event.ChangeListener;
 
 import javax.swing.text.Document;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CodePointCharStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.RecognitionException;
 
@@ -102,8 +100,8 @@ public class TokensParserAdapter extends Parser {
 
         Path tokensFilePath = FileUtil.toFile(tokensFO).toPath();
         String contentToBeParsed = snapshot.getText().toString();
-        try (Reader sr = new StringReader(contentToBeParsed) ) {
-            ANTLRInputStream input = new ANTLRInputStream(sr);
+        try {
+            CodePointCharStream input = CharStreams.fromString(contentToBeParsed);
             TokensLexer lexer = new TokensLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);  
             TokensParser tokensParser = new TokensParser(tokens);
@@ -122,8 +120,6 @@ public class TokensParserAdapter extends Parser {
             List<ParsingError> errors = syntacticErrorListener.getParsingError();
             
             result = new TokensParserResult(snapshot, errors);
-        } catch (IOException ex) {
-            LOG.severe("Strange! Unable to read the String Buffer");
         } catch (RecognitionException ex) {
             LOG.severe(ex.toString());
         }
