@@ -137,7 +137,7 @@ public final class AddANTLRSupport implements ActionListener {
             out.println("");
             
          // We inform the user that it may change the used ANTLR release
-            out.println("  The ANTLR plugin has configured your project for using the ANTLR 4.6 release.");
+            out.println("  The ANTLR plugin has configured your project for using the ANTLR " + J2SEProjectToBeAdapted.ANTLR_LIB_VERSION + " release.");
             out.println("  If your project requires another version, then:");
             switch (projectType) {
                 case ANT_BASED:

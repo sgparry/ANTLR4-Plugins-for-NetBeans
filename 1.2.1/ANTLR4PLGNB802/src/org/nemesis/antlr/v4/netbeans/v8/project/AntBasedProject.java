@@ -52,13 +52,20 @@ import java.util.ListIterator;
 
 import org.nemesis.antlr.v4.netbeans.v8.project.action.J2SEProjectToBeAdapted;
 import org.nemesis.antlr.v4.netbeans.v8.project.action.TaskException;
+import org.netbeans.api.java.classpath.ClassPath;
+import org.netbeans.api.java.project.JavaProjectConstants;
+import org.netbeans.api.java.project.classpath.ProjectClassPathModifier;
 
 import org.netbeans.api.project.Project;
 import org.netbeans.api.project.ProjectManager;
-import org.netbeans.api.project.ant.AntBuildExtender;
+import org.netbeans.api.project.ProjectUtils;
+import org.netbeans.api.project.SourceGroup;
+import org.netbeans.api.project.Sources;
+import org.netbeans.api.project.libraries.Library;
 import org.netbeans.api.project.libraries.LibraryManager;
-
+import org.netbeans.spi.project.support.ant.AntProjectHelper;
 import org.netbeans.modules.java.j2seproject.J2SEProject;
+
 
 import org.openide.filesystems.FileObject;
 
@@ -67,6 +74,8 @@ import org.openide.filesystems.FileObject;
  * @author Frédéric Yvon Vinet
  */
 public class AntBasedProject extends J2SEProjectToBeAdapted {
+    private static final String RUNTIME_LIB_NAME = "ANTLR_" + ANTLR_LIB_VERSION + "_runtime";
+    private static final String COMPLETE_LIB_NAME = "ANTLR_" + ANTLR_LIB_VERSION + "_complete";
     private static final String GRAMMAR_DIRECTORY_NAME = "grammar";
     private static final String IMPORT_DIRECTORY_NAME = "imports";
     private static final String GRAMMAR_NODE_NAME = "Source ANTLR grammars";
@@ -452,148 +461,109 @@ public class AntBasedProject extends J2SEProjectToBeAdapted {
         out.println("* ... ant build extension file for ANTLR integrated     *");
     }
     
+    private static class PropertyEntry {
+        public String[] comments;
+        public String name, value;
+        PropertyEntry(String[] comments, String name, String value)
+        {
+            this.name = name; this.value = value; this.comments = comments;
+        }
+    }
     
-    private static final String[] ANTLR4_PROPERTIES = {
-        "",
-        "# ***********************",
-        "# * ANTLR V4 properties *",
-        "# ***********************",
-        "# You may set a project relative path or an abolute path to antlr4 ant task jar",
-        "# Normally, you should not change this value that points to your project antlr4",
-        "# ant task library",
-        "antlr.ant.task.jar=nbproject/antext/ANTLRAntTask-1.2.jar",
-        "antlr.ant.task.antlr.runtime.jar=${libs.ANTLR_4.6_runtime.classpath}",
-        "",
-        "# You can set an absolute directory path or a project relative path",
-        "antlr.generator.src.dir=grammar",
-        "",
-        "# comma-separated or whitespace-separated list of excluded grammar files",
-        "# (from the directory antlr.generator.src.dir so here only file names relative",
-        "#  to that directory)",
-        "antlr.generator.src.excluded=",
-        "",
-        "# Optional directory where ANTLR will look for grammar files and token files",
-        "# All files in that directory will be ignored by code generation launched by",
-        "# antlr4 task.",
-        "# If you delete default grammar/imports directory, because you do not need it,",
-        "# then do not forget to define next property to an empty value",
-        "antlr.generator.import.dir=grammar/imports",
-        "",
-        "# Where your lexer / parser code will be located",
-        "antlr.generator.dest.dir=${build.generated.sources.dir}/antlr4",
-        "",
-        "# This property defines the ANTLR library that will be used for generating",
-        "# Java code from your grammars.",
-        "# You can set this property with :",
-        "# - NetBeans library repository: ${libs.ANTLR_4.6_complete.classpath} or any",
-        "#   other version you have installed in your NETBeans library repository,",
-        "# - An ANTLR complete library of your choice defined by an absolute path  ",
-        "#   pointing typically outside project directory,",
-        "# - the antlr 4.6 complete library deployed in your project library repository: ",
-        "#   lib/antlr-4.6-complete.jar (recommended because it enables your project to",
-        "#   continue to work even if you uninstall NetBeans),",
-        "# - empty property that will lead to use the library called project library.",
-        "# Whatever choice, you have made, if no library is found, the antlr4 task will fail.",
-        "antlr.generator.jar=${libs.ANTLR_4.6_complete.classpath}",
-        "",
-        "# required for running your generated parser",
-        "antlr.runtime.jar=${libs.ANTLR_4.6_runtime.classpath}",
-        "",
-        "# defines if ANTLR will generate a listener or not (default value=true)",
-        "antlr.generator.option.code.listener=false",
-        "",
-        "# defines if ANTLR will generate a listener or not (default value=false)",
-        "antlr.generator.option.code.visitor=false",
-        "",
-        "# defines the package of generated classes",
-        "# If you use this option (or if you put a Java package statement in ",
-        "# the grammar header) do not forget to place grammars in the ",
-        "# corresponding subdirectories of ${antlr.generator.dest.dir} as if they ",
-        "# where a Java source. You do not have to modiify antlr.generator.dest.dir.",
-        "antlr.generator.option.code.package=",
-        "",
-        "# defines if ANTLR will generate DOT graph files that represent the internal",
-        "# augmented transition network (ATN) data structures that ANTLR uses to represent",
-        "# grammars (default value=false)",
-        "antlr.generator.option.atn=false"
+    String[] test = new String[]{"1","2"};
+    
+    PropertyEntry pe2 = new PropertyEntry(null, "", "");
+            
+    private static final PropertyEntry PE = new PropertyEntry( new String[] {}, "", "" );
+    
+    private static final PropertyEntry[] ANTLR4_PROPERTIES = {
+        new PropertyEntry(new String[]{
+            "# ***********************",
+            "# * ANTLR V4 properties *",
+            "# ***********************",
+            "# You may set a project relative path or an abolute path to antlr4 ant task jar",
+            "# Normally, you should not change this value that points to your project antlr4",
+            "# ant task library"},
+        "antlr.ant.task.jar", "nbproject/antext/ANTLRAntTask-1.2.jar"),
+        new PropertyEntry(null,
+        "antlr.ant.task.antlr.runtime.jar", "${libs." + RUNTIME_LIB_NAME + ".classpath}"),
+        new PropertyEntry(new String[]{
+            "# You can set an absolute directory path or a project relative path"},
+        "antlr.generator.src.dir", "grammar"),
+        new PropertyEntry(new String[]{
+            "# comma-separated or whitespace-separated list of excluded grammar files",
+            "# (from the directory antlr.generator.src.dir so here only file names relative",
+            "#  to that directory)"},
+        "antlr.generator.src.excluded", ""),
+        new PropertyEntry(new String[]{
+            "# Optional directory where ANTLR will look for grammar files and token files",
+            "# All files in that directory will be ignored by code generation launched by",
+            "# antlr4 task.",
+            "# If you delete default grammar/imports directory, because you do not need it,",
+            "# then do not forget to define next property to an empty value"},
+        "antlr.generator.import.dir", "grammar/imports"),
+        new PropertyEntry(new String[]{
+            "# Where your lexer / parser code will be located"},
+        "antlr.generator.dest.dir", "${build.generated.sources.dir}/antlr4"),
+        new PropertyEntry(new String[]{
+            "# This property defines the ANTLR library that will be used for generating",
+            "# Java code from your grammars.",
+            "# You can set this property with :",
+            "# - NetBeans library repository: ${libs." + COMPLETE_LIB_NAME + ".classpath} or any",
+            "#   other version you have installed in your NETBeans library repository,",
+            "# - An ANTLR complete library of your choice defined by an absolute path  ",
+            "#   pointing typically outside project directory,",
+            "# - the antlr " + ANTLR_LIB_VERSION + " complete library deployed in your project library repository: ",
+            "#   lib/antlr-" + ANTLR_LIB_VERSION + "-complete.jar (recommended because it enables your project to",
+            "#   continue to work even if you uninstall NetBeans),",
+            "# - empty property that will lead to use the library called project library.",
+            "# Whatever choice, you have made, if no library is found, the antlr4 task will fail."},
+        "antlr.generator.jar", "${libs." + COMPLETE_LIB_NAME + ".classpath}"),
+        new PropertyEntry(new String[]{
+            "# required for running your generated parser"},
+        "antlr.runtime.jar", "${libs." + RUNTIME_LIB_NAME + ".classpath}"),
+        new PropertyEntry(new String[]{
+            "# defines if ANTLR will generate a listener or not (default value=true)"},
+        "antlr.generator.option.code.listener", "false"),
+        new PropertyEntry(new String[]{
+            "# defines if ANTLR will generate a listener or not (default value=false)"},
+        "antlr.generator.option.code.visitor", "false"),
+        new PropertyEntry(new String[]{
+            "# defines the package of generated classes",
+            "# If you use this option (or if you put a Java package statement in ",
+            "# the grammar header) do not forget to place grammars in the ",
+            "# corresponding subdirectories of ${antlr.generator.dest.dir} as if they ",
+            "# where a Java source. You do not have to modiify antlr.generator.dest.dir."},
+        "antlr.generator.option.code.package", ""),
+        new PropertyEntry(new String[]{
+            "# defines if ANTLR will generate DOT graph files that represent the internal",
+            "# augmented transition network (ATN) data structures that ANTLR uses to represent",
+            "# grammars (default value=false)"},
+        "antlr.generator.option.atn", "false")
     };
     
     private void addPropertiesToProject() throws TaskException {
-        final String filePathSeparator = System.getProperty("file.separator");
-
-        StringBuilder projectPropertiesFileNameBuilder = new StringBuilder
-                                      (project.getProjectDirectory().getPath());
-        projectPropertiesFileNameBuilder.append(filePathSeparator);
-        projectPropertiesFileNameBuilder.append("nbproject");
-        projectPropertiesFileNameBuilder.append(filePathSeparator);
-        projectPropertiesFileNameBuilder.append("project.properties");
-        
-        StringBuilder newProjectPropertiesFileNameBuilder = new StringBuilder
-                                      (project.getProjectDirectory().getPath());
-        newProjectPropertiesFileNameBuilder.append(filePathSeparator);
-        newProjectPropertiesFileNameBuilder.append("nbproject");
-        newProjectPropertiesFileNameBuilder.append(filePathSeparator);
-        newProjectPropertiesFileNameBuilder.append("newProject.properties");
-        
-        final FileSystem fs = FileSystems.getDefault();
-        final Path projectPropertiesFilePath =
-                        fs.getPath(projectPropertiesFileNameBuilder.toString());
-        List<String> lines;
         try {
-            lines = Files.readAllLines
-                                  (projectPropertiesFilePath,
-                                   StandardCharsets.UTF_8   );
-        } catch (IOException ex) {
-            err.println("* Unable to find/read the project.properties resource of project");
-            throw new TaskException();
-        }
-        
-        try (
-            OutputStream fout = Files.newOutputStream
-                (projectPropertiesFilePath           ,
-                 StandardOpenOption.TRUNCATE_EXISTING,
-                 StandardOpenOption.WRITE            );
-        ) {
-            Iterator<String> it = lines.iterator();
-            String line;
-            boolean javacOnSeveralLines = false;
-            while (it.hasNext()) {
-                line = it.next();
-                if (!javacOnSeveralLines) {
-                    if (!line.startsWith("javac.classpath")) {
-                        fout.write(line.getBytes());
-                        fout.write(LINE_TERMINATOR.getBytes());
-                    } else {
-                        fout.write(line.getBytes());
-                        if (line.endsWith("\\"))
-                            javacOnSeveralLines = true;
-                        else {
-                            if (line.equals("javac.classpath="))
-                                fout.write("\\".getBytes());
-                            else
-                                fout.write(":\\".getBytes());
-                            fout.write(LINE_TERMINATOR.getBytes());
-                            fout.write("    ${libs.ANTLR_4.6_runtime.classpath}".getBytes());
-                        }
-                        fout.write(LINE_TERMINATOR.getBytes());
-                    }
-                } else {
-                    fout.write(line.getBytes());
-                    if (!line.endsWith("\\")) {
-                        javacOnSeveralLines = false;
-                        fout.write(":\\".getBytes());
-                        fout.write(LINE_TERMINATOR.getBytes());
-                        fout.write("    ${libs.ANTLR_4.6_runtime.classpath}".getBytes());
-                    }
-                    fout.write(LINE_TERMINATOR.getBytes());
+            
+            Sources sources = ProjectUtils.getSources(project);
+            SourceGroup[] sourceGroups = sources.getSourceGroups(JavaProjectConstants.SOURCES_TYPE_JAVA);
+            SourceGroup sourceGroup = sourceGroups[0];
+            FileObject root = sourceGroup.getRootFolder();
+            Library lib = libraryManager.getLibrary(RUNTIME_LIB_NAME);
+            ProjectClassPathModifier.addLibraries(new Library[]{lib}, root, ClassPath.COMPILE); // Fails regardless
+
+            J2SEProject j2seProject =  project.getLookup().lookup(J2SEProject.class);
+            AntProjectHelper helper = j2seProject.getAntProjectHelper();
+
+            org.netbeans.spi.project.support.ant.EditableProperties properties = helper.getProperties(AntProjectHelper.PROJECT_PROPERTIES_PATH);
+            for (PropertyEntry propEntry : ANTLR4_PROPERTIES) {
+                properties.setProperty(propEntry.name, propEntry.value);
+                if(propEntry.comments != null)
+                {
+                    properties.setComment(propEntry.name, propEntry.comments, true);
                 }
             }
-            
-         // We add the specific ANTLR properties at the end of project property file
-            for (String propertyLine : ANTLR4_PROPERTIES) {
-                fout.write(propertyLine.getBytes());
-                fout.write(LINE_TERMINATOR.getBytes());
-            }
+            helper.putProperties(AntProjectHelper.PROJECT_PROPERTIES_PATH, properties);
 
             out.println("* ... ANTLR properties added to project.properties file *");
         } catch (IOException ex) {
