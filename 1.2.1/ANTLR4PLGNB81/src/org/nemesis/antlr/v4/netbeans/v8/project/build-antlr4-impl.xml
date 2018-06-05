@@ -8,7 +8,7 @@
         </condition>
     </fail>
     
-    <target name="-antlr4.init"
+    <target depends="-init-project" name="-antlr4.init"
             description="Declare the antlr4 task, and load associated properties">
         <!-- antlr4 ant task requires :
              1. the jar file where it is defined,
